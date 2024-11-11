@@ -1,0 +1,688 @@
+Assignment 1:
+import os
+import pandas as pd
+
+# Set the directory where your CSV file is located
+os.chdir(r"C:\Users\imash\Downloads\ml practicle")
+
+# Load the CSV file, ensuring the file name and extension are correct
+file_name = 'Mall_Customers.csv'
+try:
+    data_csv = pd.read_csv(file_name, na_values=["?"])
+except FileNotFoundError:
+    print(f"Error: The file '{file_name}' was not found in the specified directory.")
+else:
+    # Display the loaded data
+    print(data_csv)
+    print("----------------------------------------------------------------")
+    
+    # Show information about the dataset
+    data_csv.info()
+    print("----------------------------------------------------------------")
+    
+    # Check for missing values
+    print("Missing values per column:\n", data_csv.isna().sum())
+    print("----------------------------------------------------------------")
+    
+    # Show rows with any missing values
+    missing = data_csv[data_csv.isnull().any(axis=1)]
+    print("Rows with missing values:\n", missing)
+    print("----------------------------------------------------------------")
+    
+    # Display basic statistics
+    print("Data Description:\n", data_csv.describe())
+    print("----------------------------------------------------------------")
+    
+    # Fill missing values in 'Age' with the mean
+    if 'Age' in data_csv.columns:
+        data_csv['Age'].fillna(data_csv['Age'].mean(), inplace=True)
+    
+    # Fill missing values in 'Income' with the median
+    if 'Income' in data_csv.columns:
+        data_csv['Income'].fillna(data_csv['Income'].median(), inplace=True)
+    
+    # Fill missing values in 'Region' with the mode (most common value)
+    if 'Region' in data_csv.columns:
+        data_csv['Region'].fillna(data_csv['Region'].mode()[0], inplace=True)
+    
+    # Verify that no missing values remain
+    print("Missing values after filling:\n", data_csv.isna().sum())
+    print("----------------------------------------------------------------")
+    
+    # Print the cleaned data
+    print("Cleaned Data:\n", data_csv)
+
+
+Assignment 2:
+Implement Principal Component Analysis (PCA) on a given
+dataset Iris to reduce its dimensionality while retaining at least
+95% of the variance.
+
+Code:
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import StandardScaler
+from sklearn.datasets import load_iris
+
+# Load dataset
+cancer = load_iris()
+# Extract features and target
+x = cancer.data
+y = cancer.target
+print("--------------------------STANDARDIZE DATA--------------------------------")
+scaler = StandardScaler()
+x_std = scaler.fit_transform(x)
+print(x_std)
+
+print("----------------------------COVARIANCE MATRIX-----------------------------")
+covariance_matrix = np.cov(x_std, rowvar=False)
+print(covariance_matrix)
+
+print("------------------EIGENVALUES AND EIGENVECTORS-----------------------------")
+eigenvalues, eigenvectors = np.linalg.eig(covariance_matrix)
+print(eigenvalues)
+
+print("------------------SORTED EIGENVALUES AND EIGENVECTORS------------------")
+sorted_indices = np.argsort(eigenvalues)[::-1]
+sorted_eigenvalues = eigenvalues[sorted_indices]
+sorted_eigenvectors = eigenvectors[:, sorted_indices]
+print(sorted_eigenvalues)
+print(sorted_eigenvectors)
+
+print("-------------------TOP EIGENVALUES TO CAPTURE 95% VARIANCE--------------")
+total_variance = np.sum(sorted_eigenvalues)
+variance_ratio = sorted_eigenvalues / total_variance
+print(variance_ratio)
+
+cumulative_variance_ratio = np.cumsum(variance_ratio)
+print(cumulative_variance_ratio)
+
+num_components = np.argmax(cumulative_variance_ratio >= 0.95) + 1
+selected_eigenvectors = sorted_eigenvectors[:, :num_components]
+print(selected_eigenvectors)
+
+print("----------------------------TRANSFORM DATA TO LOWER DIMENSIONAL SPACE--------------------------------------")
+x_pca = x_std.dot(selected_eigenvectors)
+print(x_pca)
+
+plt.scatter(x_pca[:, 0], x_pca[:, 1], c=y, cmap='viridis')
+plt.xlabel('Principal Component 1')
+plt.ylabel('Principal Component 2')
+plt.title('PCA of Iris Dataset')
+plt.show()
+
+# Output the PCA results
+print("PCA result shape:", x_pca.shape)
+print("Number of components used:", num_components)
+
+
+Assignment 3:
+Implement Linear Regression:
+The following table shows the results of a recently
+conducted study on the correlation of the number of hours
+spent driving with the risk of developing acute backache.
+Find the equation of the best fit line for this data. Predict
+risk score for 20 hours using predictor model.
+Code:
+import numpy as np
+import matplotlib.pyplot as plt
+
+hours_driving = np.array([10, 9, 2, 15, 10, 16, 11, 16])
+risk_score = np.array([95, 80, 10, 50, 45, 98, 38, 93])
+
+mean_x = np.mean(hours_driving)
+mean_y = np.mean(risk_score)
+
+numerator = np.sum((hours_driving - mean_x) * (risk_score - mean_y))
+denominator = np.sum((hours_driving - mean_x) ** 2)
+slope = numerator / denominator
+intercept = mean_y - slope * mean_x
+
+print(f"Equation of the best fit line: y = {slope:.2f}x + {intercept:.2f}")
+
+hours_to_predict = 20
+predicted_risk_score = slope * hours_to_predict + intercept
+print(f"Predicted risk score for {hours_to_predict} hours of driving: {predicted_risk_score:.2f}")
+
+plt.scatter(hours_driving, risk_score, color='blue', label='Data Points')
+
+plt.plot(hours_driving, slope * hours_driving + intercept, color='red', label='Best Fit Line')
+
+plt.xlabel('Hours Driving')
+plt.ylabel('Risk Score')
+plt.title('Hours Driving vs Risk Score')
+plt.legend()
+plt.show()
+
+Assignment:4
+Apply K-Nearest Neighbor Classifier on Data set. Test for
+Accuracy and Precision.
+Classify the email using the binary classification method. Email
+Spam detection has two states: a) Normal State – Not Spam, b)
+Abnormal State – Spam. Use K-Nearest Neighbors
+for classification.
+Dataset link: The emails.csv dataset on the Kaggle
+
+Code:
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import accuracy_score, precision_score
+
+# Step 1: Load the dataset
+data = pd.read_csv('emails.csv')
+
+# Step 2: Split the data into features (X) and labels (y)
+X = data.drop(columns=['Email No.', 'Prediction'])  # Drop the email identifier and target column
+y = data['Prediction']  # Target column for spam (1) or not spam (0)
+
+# Step 3: Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+# Step 4: Initialize the K-Nearest Neighbors classifier
+knn = KNeighborsClassifier(n_neighbors=5)
+
+# Step 5: Fit the model on the training data
+knn.fit(X_train, y_train)
+
+# Step 6: Predict the test set labels
+y_pred = knn.predict(X_test)
+
+# Step 7: Calculate accuracy and precision
+accuracy = accuracy_score(y_test, y_pred)
+precision = precision_score(y_test, y_pred)
+
+# Step 8: Print the results
+print(f'Accuracy of K-Nearest Neighbors: {accuracy:.2f}')
+print(f'Precision of K-Nearest Neighbors: {precision:.2f}')
+
+Assignment :5
+Design and implement SVM for classification with the data set given in the assignment No. 4. Test for Accuracy and
+Precision. Also Analyze the performance of SVM and KNN
+
+# Import necessary libraries
+import os
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, precision_score, classification_report
+from sklearn.datasets import make_classification
+
+# Load dataset from a specified path
+url = "D:\\archive\\emails.csv"
+print("Loading dataset...")
+
+# Read the CSV file into a DataFrame
+df = pd.read_csv(url)
+
+# Identify and remove non-numeric columns
+print("\nIdentifying non-numeric columns...")
+non_numeric_columns = df.select_dtypes(include=['object']).columns
+print(f"Non-numeric columns identified: {list(non_numeric_columns)}")
+df = df.drop(columns=non_numeric_columns)
+print("Non-numeric columns dropped.\n")
+
+# Display first few rows of the dataset after dropping non-numeric columns
+print("Dataset after dropping non-numeric columns:")
+print(df.head())
+
+# Filter dataset to keep only rows with 'Prediction' values of 0 or 1
+print("\nFiltering rows where 'Prediction' column has values 0 or 1...")
+df = df[df['Prediction'].isin([0, 1])]
+print("Filtering complete.\n")
+print("Dataset after filtering:")
+print(df.head())
+
+# Split the data into features (X) and labels (y)
+print("\nSplitting the data into features and labels...")
+X = df.drop(columns=['Prediction'])
+y = df['Prediction']
+print("Features (X):")
+print(X.head())
+print("Labels (y):")
+print(y.head())
+
+# Split the dataset into training and testing sets
+print("\nSplitting the data into training and testing sets...")
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+print("Training features (X_train):")
+print(X_train[:5])
+print("Training labels (y_train):")
+print(y_train[:5])
+print("Testing features (X_test):")
+print(X_test[:5])
+print("Testing labels (y_test):")
+print(y_test[:5])
+
+# Standardize the features
+print("\nStandardizing the data...")
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+print("Data standardized.")
+print("Standardized training features (X_train):")
+print(X_train[:5])
+print("Standardized testing features (X_test):")
+print(X_test[:5])
+
+# Train an SVM model
+print("\nTraining SVM model...")
+svm_emails = SVC(kernel='rbf', random_state=0)
+svm_emails.fit(X_train, y_train)
+
+# Make predictions with SVM model and print classification report
+print("\nMaking predictions using SVM...")
+y_pred_emails = svm_emails.predict(X_test)
+print("\nSVM Classification Report for emails dataset:\n")
+print(classification_report(y_test, y_pred_emails))
+
+# Train a KNN model
+print("\nTraining KNN model...")
+knn_emails = KNeighborsClassifier(n_neighbors=5)
+knn_emails.fit(X_train, y_train)
+
+# Make predictions with KNN model and print classification report
+y_pred_knn_emails = knn_emails.predict(X_test)
+print("\nKNN Classification Report for emails dataset:\n")
+print(classification_report(y_test, y_pred_knn_emails))
+
+# Calculate accuracy and precision for SVM and KNN models
+accuracy_svm = accuracy_score(y_test, y_pred_emails)
+precision_svm = precision_score(y_test, y_pred_emails, pos_label=1)
+accuracy_knn = accuracy_score(y_test, y_pred_knn_emails)
+precision_knn = precision_score(y_test, y_pred_knn_emails, pos_label=1)
+
+# Print performance comparison
+print("\nPerformance comparison between KNN and SVM for the emails dataset:")
+print(f"KNN Accuracy: {accuracy_knn:.2f}, Precision: {precision_knn:.2f}")
+print(f"SVM Accuracy: {accuracy_svm:.2f}, Precision: {precision_svm:.2f}")
+
+# Generate a synthetic dataset and split into training/testing sets
+X_synthetic, y_synthetic = make_classification(n_samples=100, n_features=2, n_classes=2, n_redundant=0, n_clusters_per_class=1)
+X_train_synthetic, X_test_synthetic, y_train_synthetic, y_test_synthetic = train_test_split(X_synthetic, y_synthetic, test_size=0.2, random_state=90)
+
+# Standardize the synthetic dataset
+sc_synthetic = StandardScaler()
+X_train_synthetic = sc_synthetic.fit_transform(X_train_synthetic)
+X_test_synthetic = sc_synthetic.transform(X_test_synthetic)
+
+# Train an SVM model on the synthetic dataset
+svm_synthetic = SVC(kernel='rbf', random_state=0)
+svm_synthetic.fit(X_train_synthetic, y_train_synthetic)
+
+# Predict using the synthetic SVM model
+y_pred_synthetic = svm_synthetic.predict(X_test_synthetic)
+
+# Function to plot decision boundaries
+def plot_decision_boundaries(X, y, model, title):
+    h = .02  # Step size in the mesh
+    x_min, x_max = X[:, 0].min() - 1, X[:, 0].max() + 1
+    y_min, y_max = X[:, 1].min() - 1, X[:, 1].max() + 1
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
+    Z = model.predict(np.c_[xx.ravel(), yy.ravel()])
+    Z = Z.reshape(xx.shape)
+    
+    plt.contourf(xx, yy, Z, alpha=0.8, cmap=plt.cm.coolwarm)
+    scatter = plt.scatter(X[:, 0], X[:, 1], c=y, edgecolor='k', marker='o', cmap=plt.cm.coolwarm)
+    legend1 = plt.legend(*scatter.legend_elements(), title="Classes")
+    plt.gca().add_artist(legend1)
+    plt.xlim(xx.min(), xx.max())
+    plt.ylim(yy.min(), yy.max())
+    plt.xticks(())
+    plt.yticks(())
+    plt.title(title)
+
+# Plot SVM decision boundary for the synthetic dataset
+plt.figure(figsize=(10, 6))
+plot_decision_boundaries(X_test_synthetic, y_test_synthetic, svm_synthetic, 'SVM Decision Boundary for Synthetic Dataset')
+plt.show()
+
+Assignment :6
+Implement Naïve Bayes Classifier on Tennisdata Data set. Evaluate the classifier's performance
+
+Code:
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import GaussianNB
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+
+data = {
+    'Outlook': ['Sunny', 'Sunny', 'Overcast', 'Rain', 'Rain', 'Rain', 'Overcast', 'Sunny', 'Sunny', 'Rain', 'Sunny', 'Overcast', 'Overcast', 'Rain'],
+    'Temperature': ['Hot', 'Hot', 'Hot', 'Mild', 'Cool', 'Cool', 'Mild', 'Mild', 'Sunny', 'Mild', 'Cool', 'Cool', 'Mild', 'Mild'],
+    'Humidity': ['High', 'High', 'High', 'High', 'Normal', 'Normal', 'Normal', 'High', 'Normal', 'Normal', 'High', 'Normal', 'Normal', 'High'],
+    'Windy': [False, True, False, False, False, True, True, False, False, True, True, True, False, True],
+    'Play': ['No', 'No', 'Yes', 'Yes', 'Yes', 'No', 'Yes', 'No', 'Yes', 'Yes', 'Yes', 'Yes', 'Yes', 'No']
+}
+
+df = pd.DataFrame(data)
+print("Step 1: Dataset Loaded")
+print(df)
+
+df_encoded = pd.get_dummies(df, columns=['Outlook', 'Temperature', 'Humidity'], drop_first=True)
+print("\nStep 2: Data Preprocessed using One-Hot Encoding")
+print(df_encoded)
+
+
+X = df_encoded.drop('Play', axis=1)
+y = df_encoded['Play'].map({'Yes': 1, 'No': 0}) 
+print("\nStep 3: Features and Labels Prepared")
+print("Features (X):")
+print(X)
+print("Labels (y):")
+print(y)
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+print("\nStep 4: Data Split into Training and Testing Sets")
+print("Training Features (X_train):")
+print(X_train)
+print("Testing Features (X_test):")
+print(X_test)
+print("Training Labels (y_train):")
+print(y_train)
+print("Testing Labels (y_test):")
+print(y_test)
+
+model = GaussianNB()
+model.fit(X_train, y_train)
+print("\nStep 5: Naïve Bayes Classifier Trained")
+
+
+y_pred = model.predict(X_test)
+print("\nStep 6: Predictions Made on Test Set")
+print("Predicted Labels (y_pred):")
+print(y_pred)
+
+
+accuracy = accuracy_score(y_test, y_pred)
+conf_matrix = confusion_matrix(y_test, y_pred)
+class_report = classification_report(y_test, y_pred)
+
+print("\nStep 7: Classifier Performance Evaluation")
+print(f"Accuracy: {accuracy:.2f}")
+print("Confusion Matrix:")
+print(conf_matrix)
+print("Classification Report:")
+print(class_report)
+
+Assignment 7:
+
+Implement K-Means Clustering on the following data set
+We have given a collection of 8 points.
+P1=[0.1,0.6] P2=[0.15,0.71]P3=[0.08,0.9] P4=[0.16,0.85]
+P5=[0.2,0.3] P6=[0.25,0.5] P7=[0.24, 0.1] P8=[0.3,0.2].
+Perform the k-mean clustering with initial centroids as
+m1=P1=Cluster#1=C1 and m2=P8=cluster#2=C2.
+Answer the following
+a) Which cluster does P6 belongs to?
+b) What is the population of cluster around m2?
+c) What is updated value of m1 and m2?
+
+Code:
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_iris
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+from sklearn.metrics import silhouette_score
+
+# Load the Iris dataset
+iris = load_iris()
+X = iris.data  
+y = iris.target
+
+# Standardize the data
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# Initialize the K-Means model
+kmeans = KMeans(n_clusters=3, random_state=42)
+
+# Fit the model
+kmeans.fit(X_scaled)
+
+# Predict the clusters
+y_kmeans = kmeans.predict(X_scaled)
+
+# Get the cluster centers
+centers = kmeans.cluster_centers_
+
+# Calculate silhouette score to evaluate the clustering
+silhouette_avg = silhouette_score(X_scaled, y_kmeans)
+print(f"Silhouette Score: {silhouette_avg:.2f}")
+
+# Visualize the clusters using PCA (Principal Component Analysis for dimensionality reduction)
+pca = PCA(n_components=2)
+X_pca = pca.fit_transform(X_scaled)
+
+plt.scatter(X_pca[:, 0], X_pca[:, 1], c=y_kmeans, cmap='viridis', s=50)
+plt.scatter(pca.transform(centers)[:, 0], pca.transform(centers)[:, 1], c='red', s=200, alpha=0.75, label='Centroids')
+plt.title('K-Means Clustering on Iris Dataset (PCA-reduced data)')
+plt.legend()
+plt.show()
+
+
+
+
+Assignment : 8
+Implement K-Medoid Clustering on the data set given in
+assignment no. 7.
+
+Code:
+import pandas as pd              
+import numpy as np                
+import matplotlib.pyplot as plt    
+
+data = pd.read_csv('Mall_Customers.csv')  
+
+features = data[['Annual Income (k$)', 'Spending Score (1-100)']].values  
+
+medoid1 = features[0]    
+medoid2 = features[-1]   
+
+def manhattan_distance(point1, point2):
+    return np.sum(np.abs(point1 - point2))  
+
+while True:
+ 
+    cluster1 = []  
+    cluster2 = []  
+
+  
+    for point in features:  
+        dist_to_medoid1 = manhattan_distance(point, medoid1)  
+        dist_to_medoid2 = manhattan_distance(point, medoid2)  
+        
+        
+        if dist_to_medoid1 < dist_to_medoid2:
+            cluster1.append(point)  
+        else:
+            cluster2.append(point) 
+
+    
+    if cluster1:  
+        new_medoid1 = min(cluster1, key=lambda p: sum(manhattan_distance(p, other) for other in cluster1))  
+    else:
+        new_medoid1 = medoid1  
+
+    if cluster2:  
+        new_medoid2 = min(cluster2, key=lambda p: sum(manhattan_distance(p, other) for other in cluster2))  
+    else:
+        new_medoid2 = medoid2  
+
+    
+    if np.array_equal(new_medoid1, medoid1) and np.array_equal(new_medoid2, medoid2):
+        break  
+
+    
+    medoid1, medoid2 = new_medoid1, new_medoid2  
+
+
+cluster1 = np.array(cluster1)  
+cluster2 = np.array(cluster2)  
+
+plt.scatter(cluster1[:, 0], cluster1[:, 1], color='blue', label='Cluster 1') 
+plt.scatter(cluster2[:, 0], cluster2[:, 1], color='green', label='Cluster 2')  
+plt.scatter(medoid1[0], medoid1[1], color='red', marker='X', s=200, label='Medoid 1')  
+plt.scatter(medoid2[0], medoid2[1], color='red', marker='X', s=200, label='Medoid 2') 
+plt.title('Simple K-Medoid Clustering')  
+plt.xlabel('Annual Income (k$)')
+plt.ylabel('Spending Score (1-100)')  
+plt.legend()  
+plt.show() 
+
+
+print("Final Medoid 1:", medoid1)  
+print("Final Medoid 2:", medoid2)  
+
+Assignment: 9
+Implement Hierarchical clustering on the shopping trends data
+set.
+
+Code:
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
+
+
+# Sample shopping trend data
+data = {
+    'CustomerID': [1, 2, 3, 4, 5, 6, 7, 8],
+    'SpendingScore': [39, 81, 6, 77, 40, 76, 3, 96],
+    'Age': [21, 24, 22, 25, 23, 26, 20, 27]
+}
+
+shopping_trends = pd.DataFrame(data)
+print("Shopping Trend Dataset:")
+print(shopping_trends)
+
+# Selecting features for clustering
+features = shopping_trends[['SpendingScore', 'Age']].to_numpy()
+
+# Perform hierarchical clustering using Ward's method
+Z = linkage(features, method='ward')
+
+
+# Cut the dendrogram to form flat clusters
+max_d = 15  
+clusters = fcluster(Z, max_d, criterion='distance')
+
+shopping_trends['Cluster'] = clusters
+print("\nShopping Trend Data with Clusters:")
+print(shopping_trends)
+
+# Plot the dendrogram
+plt.figure(figsize=(10, 7))
+dendrogram(Z, labels=shopping_trends['CustomerID'].values)
+plt.title('Hierarchical Clustering Dendrogram')
+plt.xlabel('Customer ID')
+plt.ylabel('Distance')
+plt.show()
+
+Assignment : 10
+Implement A-priori algorithm to find frequently occurring items
+from given data and generate strong association rules using
+support and confidence thresholds for the given dataset.
+Support threshold=50%, Confidence= 60%
+
+Code:
+import pandas as pd
+from itertools import combinations
+from mlxtend.preprocessing import TransactionEncoder
+
+# Sample dataset of transactions
+transactions = [
+    ['Milk', 'Bread', 'Diaper'],
+    ['Bread', 'Diaper', 'Beer'],
+    ['Milk', 'Diaper', 'Beer', 'Cola'],
+    ['Milk', 'Bread', 'Diaper', 'Beer'],
+    ['Bread', 'Diaper', 'Cola'],
+    ['Milk', 'Bread', 'Diaper'],
+    ['Milk', 'Beer', 'Cola'],
+    ['Bread', 'Diaper', 'Beer', 'Milk'],
+    ['Bread', 'Cola'],
+    ['Milk', 'Diaper'],
+]
+
+# Define support and confidence thresholds
+support_threshold = 0.5  
+confidence_threshold = 0.6  
+
+print("\nManual Method..................")
+
+# Function to calculate support
+def calculate_support(itemset, transactions):
+    item_count = sum(1 for transaction in transactions if itemset.issubset(transaction))
+    return item_count / len(transactions)
+
+# Generate frequent itemsets using the Apriori algorithm
+def apriori(transactions, support_threshold):
+    frequent_itemsets = {}
+    one_itemsets = {frozenset([item]) for transaction in transactions for item in transaction}
+
+    # First pass to find single item support
+    for itemset in one_itemsets:
+        support = calculate_support(itemset, transactions)  
+        if support >= support_threshold:
+            frequent_itemsets[itemset] = support
+
+    current_itemsets = frequent_itemsets.copy()
+    k = 2
+
+    while current_itemsets:
+        candidate_itemsets = set(
+            frozenset(i.union(j)) for i in current_itemsets.keys() for j in current_itemsets.keys() if len(i.union(j)) == k
+        )
+        current_itemsets = {}
+
+        for itemset in candidate_itemsets:
+            support = calculate_support(itemset, transactions) 
+            if support >= support_threshold:
+                current_itemsets[itemset] = support
+
+        frequent_itemsets.update(current_itemsets)
+        k += 1
+
+    return frequent_itemsets
+
+# Generate frequent itemsets
+frequent_itemsets = apriori(transactions, support_threshold)
+
+# Generate association rules
+def generate_rules(frequent_itemsets, confidence_threshold):
+    rules = []
+    
+    for itemset in frequent_itemsets:
+        if len(itemset) > 1:  # Only consider itemsets with more than 1 item
+            for consequence in itemset:
+                antecedent = itemset - frozenset([consequence])
+                if antecedent:
+                    support_antecedent = frequent_itemsets.get(antecedent, 0)  # Use get to avoid KeyError
+                    support_itemset = frequent_itemsets[itemset]
+                    confidence = support_itemset / support_antecedent if support_antecedent > 0 else 0
+
+                    if confidence >= confidence_threshold:
+                        rules.append((antecedent, consequence, confidence))
+
+    return rules
+
+# Generate strong association rules
+strong_rules = generate_rules(frequent_itemsets, confidence_threshold)
+
+# Display results
+print("Frequent Itemsets:")
+for itemset, support in frequent_itemsets.items():
+    print(f"Itemset: {set(itemset)}, Support: {support:.2f}")
+
+print("\nStrong Association Rules:")
+for antecedent, consequence, confidence in strong_rules:
+    print(f"Rule: {set(antecedent)} -> {consequence}, Confidence: {confidence:.2f}")
+
